@@ -39,6 +39,27 @@ export default function HomePage() {
           </ul>
         </Link>
 
+        <Link className={styles.card} href="/tools/slopometer">
+          <span className={styles.cardTop}>
+            <span className={styles.cardTitle}>Slopometer</span>
+            <span className={styles.cardArrow} aria-hidden="true">
+              →
+            </span>
+          </span>
+          <span className={styles.cardDesc}>
+            A deterministic prose-style analyzer. Paste writing and it scores the stylistic tics
+            that read as generic, over-polished, or performative — canned openers, contrast
+            templates, corporate jargon, em-dash habits — and shows exactly which rules fired.
+            Detects writing crimes, not AI.
+          </span>
+          <ul className={styles.tags}>
+            <li className={styles.tag}>style linter</li>
+            <li className={styles.tag}>clichés</li>
+            <li className={styles.tag}>jargon</li>
+            <li className={styles.tag}>explainable</li>
+          </ul>
+        </Link>
+
         <p className={styles.note}>
           More instruments are on the bench. Each one arrives only when it&rsquo;s genuinely
           finished — not before.

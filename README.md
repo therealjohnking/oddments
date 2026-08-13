@@ -49,6 +49,33 @@ Three views keep it usable and accessible:
   readers, copying, and verification;
 - a **findings list** grouped by category, keyboard-navigable, with jump-to-occurrence.
 
+### Slopometer — `/tools/slopometer`
+
+A deterministic prose-style analyzer. Paste writing and it scores the stylistic tells that make
+text read as generic, over-polished, formulaic, or performative — then shows you **exactly which
+rules fired and why**.
+
+Its premise is deliberate:
+
+> **Detect writing crimes, not artificial intelligence.**
+
+Slopometer makes **no claim** about whether a human or a machine wrote anything — that is
+unreliable and out of scope. It only counts recognizable habits, and it is transparent about the
+fact that the score is a playful heuristic, not a measurement, grade, or verdict.
+
+You get an overall **0–100 score** in one of four bands (from _Apparently written by a person_ to
+_Executive Thought Leadership Event_), a breakdown of every rule that contributed, occurrence
+counts and point contributions per rule, and — where a finding maps to real text — the exact
+spans **highlighted in context**, cross-linked to the findings list. Analysis runs live as you
+type; there is no submit step.
+
+Fifteen rules span eight categories: canned rhetorical setups, performative audience
+instructions, contrast templates (“it’s not X, it’s Y”), corporate jargon, inspirational content
+clichés, structural tendencies (one-sentence paragraphs, staccato bursts, rhetorical-question
+stacks, bullet/heading density), punctuation & emphasis (em dashes, exclamation marks, ellipses,
+emoji, shouting caps — all normalized against length), and repeated sentence openings. The
+scoring model and its normalization are documented at the top of `lib/slopometer/score.ts`.
+
 ---
 
 ## Running it
@@ -87,24 +114,32 @@ npm run check         # everything below, in order
 ## Project structure
 
 ```
-app/                         Next.js App Router
-  page.tsx                   landing page
-  tools/invisible-characters/ the tool route
-  layout.tsx, globals.css    shell, design tokens, theming
+app/                          Next.js App Router
+  page.tsx                    landing page
+  tools/invisible-characters/ the inspector route
+  tools/slopometer/           the slopometer route
+  layout.tsx, globals.css     shell, design tokens, theming
 components/
-  site/                      header, footer, theme toggle
-  inspector/                 the tool's React UI (+ its own CSS module)
-lib/inspector/               framework-agnostic engine (the tested core)
-  categories.ts              the category taxonomy + metadata
-  named-characters.ts        curated names / abbreviations / clean-targets
-  classify.ts                per-code-point classification
-  analyze.ts                 single-pass analyzer (stats, findings, lines)
-  clean.ts                   the conservative cleaning transforms
-  *.test.ts                  unit tests
+  site/                       header, footer, theme toggle
+  inspector/                  inspector React UI (+ its own CSS module)
+  slopometer/                 slopometer React UI (+ its own CSS module)
+lib/inspector/                framework-agnostic engine (the tested core)
+  categories.ts               the category taxonomy + metadata
+  named-characters.ts         curated names / abbreviations / clean-targets
+  classify.ts                 per-code-point classification
+  analyze.ts                  single-pass analyzer (stats, findings, lines)
+  clean.ts                    the conservative cleaning transforms
+lib/slopometer/               framework-agnostic engine (the tested core)
+  types.ts                    shared types (findings, bands, analysis)
+  text.ts                     offset-preserving tokenizer (words/sentences/…)
+  rules.ts                    the 15 detectors + phrase lists + categories
+  score.ts                    normalization helpers + score bands
+  analyze.ts                  orchestrator: tokenize → run rules → score → band
+  *.test.ts                   unit tests
 ```
 
-The transformation and detection logic lives in `lib/inspector` with **no React
-dependency**, so it is thoroughly unit-tested in isolation from rendering.
+Each tool's detection logic lives in its `lib/` engine with **no React dependency**, so it is
+thoroughly unit-tested in isolation from rendering.
 
 ---
 
