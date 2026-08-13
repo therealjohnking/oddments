@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+coverage
+package-lock.json
+
+# Build-managed by Next.js (it rewrites these in its own style).
+tsconfig.json
+next-env.d.ts

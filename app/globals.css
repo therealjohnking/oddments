@@ -1,0 +1,226 @@
+/*
+ * Oddments design tokens + base styles.
+ *
+ * Theming: light palette on bare :root. Dark palette is applied when the OS
+ * prefers dark AND the user hasn't forced light, and again when the user
+ * explicitly picks dark via the theme toggle (data-theme="dark").
+ */
+
+:root {
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono:
+    ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Menlo, Consolas,
+    'Liberation Mono', monospace;
+
+  /* Surfaces & text (warm paper light theme) */
+  --bg: #f6f4ee;
+  --bg-2: #efece3;
+  --surface: #ffffff;
+  --surface-2: #faf9f5;
+  --text: #1c1b18;
+  --text-muted: #57544c;
+  --text-faint: #86837a;
+  --border: #e5e1d6;
+  --border-strong: #d3cebf;
+
+  /* Accent (burnt orange) */
+  --accent: #b23c12;
+  --accent-hover: #97330f;
+  --accent-contrast: #ffffff;
+  --accent-soft: #f7e9e0;
+  --ring: #b23c12;
+
+  /* Severity scale: info → notice → warning → danger */
+  --sev-info-fg: #33475a;
+  --sev-info-bg: #edf1f5;
+  --sev-info-border: #c3d0dc;
+  --sev-notice-fg: #7a4e05;
+  --sev-notice-bg: #fbf1dc;
+  --sev-notice-border: #ecd39a;
+  --sev-warning-fg: #9a3412;
+  --sev-warning-bg: #fdeee3;
+  --sev-warning-border: #f4c19c;
+  --sev-danger-fg: #ab1330;
+  --sev-danger-bg: #fbe9ec;
+  --sev-danger-border: #f0abb7;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-xs: 5px;
+  --shadow-sm: 0 1px 2px rgba(30, 25, 15, 0.06);
+  --shadow-md: 0 6px 24px -10px rgba(30, 25, 15, 0.22);
+
+  --maxw: 1180px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #17161a;
+    --bg-2: #1d1c20;
+    --surface: #211f24;
+    --surface-2: #26242a;
+    --text: #f0ede6;
+    --text-muted: #b1aca2;
+    --text-faint: #837e74;
+    --border: #322f38;
+    --border-strong: #45414c;
+
+    --accent: #ff7d4d;
+    --accent-hover: #ff9166;
+    --accent-contrast: #1a1512;
+    --accent-soft: #2c211b;
+    --ring: #ff7d4d;
+
+    --sev-info-fg: #aebccb;
+    --sev-info-bg: #1e2831;
+    --sev-info-border: #34424f;
+    --sev-notice-fg: #f0c869;
+    --sev-notice-bg: #2a2413;
+    --sev-notice-border: #4c3f1d;
+    --sev-warning-fg: #f6a878;
+    --sev-warning-bg: #2c1e15;
+    --sev-warning-border: #4b3320;
+    --sev-danger-fg: #f593a1;
+    --sev-danger-bg: #2c161b;
+    --sev-danger-border: #4c222b;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme='dark'] {
+  --bg: #17161a;
+  --bg-2: #1d1c20;
+  --surface: #211f24;
+  --surface-2: #26242a;
+  --text: #f0ede6;
+  --text-muted: #b1aca2;
+  --text-faint: #837e74;
+  --border: #322f38;
+  --border-strong: #45414c;
+
+  --accent: #ff7d4d;
+  --accent-hover: #ff9166;
+  --accent-contrast: #1a1512;
+  --accent-soft: #2c211b;
+  --ring: #ff7d4d;
+
+  --sev-info-fg: #aebccb;
+  --sev-info-bg: #1e2831;
+  --sev-info-border: #34424f;
+  --sev-notice-fg: #f0c869;
+  --sev-notice-bg: #2a2413;
+  --sev-notice-border: #4c3f1d;
+  --sev-warning-fg: #f6a878;
+  --sev-warning-bg: #2c1e15;
+  --sev-warning-border: #4b3320;
+  --sev-danger-fg: #f593a1;
+  --sev-danger-bg: #2c161b;
+  --sev-danger-border: #4c222b;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--accent);
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+a:hover {
+  color: var(--accent-hover);
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* Utilities */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 4vw, 2rem);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 20;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.85rem;
+  box-shadow: var(--shadow-md);
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
