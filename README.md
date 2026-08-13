@@ -76,6 +76,35 @@ stacks, bullet/heading density), punctuation & emphasis (em dashes, exclamation 
 emoji, shouting caps — all normalized against length), and repeated sentence openings. The
 scoring model and its normalization are documented at the top of `lib/slopometer/score.ts`.
 
+### CSV Autopsy — `/tools/csv-autopsy`
+
+A local-first CSV profiling and diagnostic instrument. Drop in a file (or choose one, or paste the
+text) and it examines the dataset and answers one question: **what is actually in this file, and
+what looks suspicious?** Its premise is deliberate:
+
+> **Inspect first. Fix deliberately.**
+
+CSV Autopsy diagnoses and explains — it **never** repairs, normalizes, or rewrites your data. There
+are no “trim all whitespace”, “fix dates”, or “download cleaned CSV” buttons; the value is _here is
+what looks wrong and why_, not _trust me, I fixed it_.
+
+You get a **dataset overview** (rows, columns, detected delimiter, header detection, blank/duplicate
+rows, completeness), a **profile for every column** (a conservative inferred type, completeness,
+distinctness, candidate-key status, numeric/date statistics, and top values), and a prioritized list
+of **findings** — each with a severity, a plain-language explanation, the affected column, a few
+exact examples, and a one-sentence _why_. Findings cover structure (malformed rows, unclosed quotes),
+headers (duplicate/blank/whitespace names), completeness (empty and mostly-blank columns, null-like
+tokens), uniqueness (candidate keys and **duplicated identifiers**), type integrity (values that do
+not match a column’s dominant type), consistency (constant columns, capitalization drift, punctuation
+variants), whitespace, and exact duplicate rows. Export the whole thing as a Markdown or JSON report.
+
+Type inference is intentionally conservative: unambiguous ISO-style dates are recognized while
+locale-ambiguous forms like `03/04/2026` are left as text; a column that is 99% numeric with a few
+stragglers keeps its type and reports the stragglers as anomalies rather than being flattened to
+“text”. Parsing is handled by [Papa Parse](https://www.papaparse.com/) (used only on in-memory
+strings — never the network); every diagnostic on top of it is Oddments’ own. A built-in messy
+sample dataset lets you explore the whole tool immediately.
+
 ---
 
 ## Running it
@@ -118,11 +147,13 @@ app/                          Next.js App Router
   page.tsx                    landing page
   tools/invisible-characters/ the inspector route
   tools/slopometer/           the slopometer route
+  tools/csv-autopsy/          the CSV Autopsy route
   layout.tsx, globals.css     shell, design tokens, theming
 components/
   site/                       header, footer, theme toggle
   inspector/                  inspector React UI (+ its own CSS module)
   slopometer/                 slopometer React UI (+ its own CSS module)
+  csv-autopsy/                CSV Autopsy React UI (+ its own CSS module)
 lib/inspector/                framework-agnostic engine (the tested core)
   categories.ts               the category taxonomy + metadata
   named-characters.ts         curated names / abbreviations / clean-targets
@@ -135,6 +166,17 @@ lib/slopometer/               framework-agnostic engine (the tested core)
   rules.ts                    the 15 detectors + phrase lists + categories
   score.ts                    normalization helpers + score bands
   analyze.ts                  orchestrator: tokenize → run rules → score → band
+  *.test.ts                   unit tests
+lib/csv-autopsy/              framework-agnostic engine (the tested core)
+  types.ts                    shared types (columns, findings, overview)
+  parse.ts                    Papa Parse wrapper: header/blank/ragged detection
+  infer.ts                    conservative value + column type inference
+  stats.ts                    numeric + date statistics
+  profile.ts                  one-pass column scan → profiles, overview, preview
+  findings.ts                 the diagnostic rules + prioritization
+  export.ts                   Markdown / JSON report rendering
+  sample-data.ts              the deliberately-messy sample dataset
+  index.ts                    public API: analyzeCsv() + re-exports
   *.test.ts                   unit tests
 ```
 
@@ -157,6 +199,13 @@ thoroughly unit-tested in isolation from rendering.
   and "looks-like" hints on top.
 - **Paste fidelity.** Input is a native `<textarea>`; the exact characters you paste are
   preserved and never normalised on the way in. Cleaning is a separate, explicit step.
+- **One deliberate runtime dependency.** CSV Autopsy uses [Papa Parse](https://www.papaparse.com/)
+  for tokenization — correct CSV parsing (quoted fields with embedded commas and newlines,
+  doubled-quote escaping, mixed line endings, delimiter auto-detection) is a genuine state machine,
+  and a mature, zero-dependency, MIT-licensed library is the right tool. It is used only on
+  in-memory strings, never given a URL or a worker, so it makes no network requests. Everything
+  above tokenization — header detection, blank/ragged-row accounting, type inference, and every
+  diagnostic — is the engine’s own, computed from the raw rows Papa returns.
 - **Accessibility.** The visual reveal is treated as a sighted enhancement (`aria-hidden`);
   the findings list, the expanded-text view, and the original textarea are the fully
   equivalent accessible surfaces. Severity is never encoded by colour alone (label + border +
@@ -175,6 +224,13 @@ thoroughly unit-tested in isolation from rendering.
   large-but-reasonable inputs well; a worker would be the next step for very large inputs.
 - **No "Zalgo" / combining-mark anomaly detection.** Flagging abnormal combining-mark runs
   (as opposed to legitimate diacritics) needs anomaly heuristics and is out of scope for now.
+- **CSV Autopsy is an inspection instrument, not a cleaner.** No transforms, no “download cleaned
+  CSV”, no schema enforcement — deliberately. Its similar-value detection is limited to exact
+  case/whitespace/punctuation normalization; **fuzzy typo-distance matching** (e.g. `Finance` vs
+  `Finanace`) is left out on purpose, because responsible thresholds and performance need more care
+  than a first cut allows. Analysis is synchronous (no Web Worker) with example caps and a row
+  ceiling; that keeps large-but-reasonable files responsive, and a worker would be the next step for
+  very large ones.
 
 ---
 

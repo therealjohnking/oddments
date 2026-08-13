@@ -60,6 +60,27 @@ export default function HomePage() {
           </ul>
         </Link>
 
+        <Link className={styles.card} href="/tools/csv-autopsy">
+          <span className={styles.cardTop}>
+            <span className={styles.cardTitle}>CSV Autopsy</span>
+            <span className={styles.cardArrow} aria-hidden="true">
+              →
+            </span>
+          </span>
+          <span className={styles.cardDesc}>
+            A local-first CSV profiler and diagnostic instrument. Drop in a file and see its
+            structure, inferred types, and candidate keys — plus duplicates, type anomalies,
+            whitespace, and capitalization drift, each with a plain-language reason. Inspect first,
+            fix deliberately.
+          </span>
+          <ul className={styles.tags}>
+            <li className={styles.tag}>data quality</li>
+            <li className={styles.tag}>type inference</li>
+            <li className={styles.tag}>candidate keys</li>
+            <li className={styles.tag}>local-only</li>
+          </ul>
+        </Link>
+
         <p className={styles.note}>
           More instruments are on the bench. Each one arrives only when it&rsquo;s genuinely
           finished — not before.
