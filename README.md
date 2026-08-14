@@ -143,6 +143,54 @@ editor. Comparison runs live as you type (no _Analyze_ button).
 - **Three built-in examples** — a flagship "looks identical" pair that hides seven kinds of
   difference, an ordinary prose revision, and a config change for line mode.
 
+### JSON Crime Scene — `/tools/json-crime-scene`
+
+A local-first instrument for inspecting, understanding, and diagnosing **one JSON document**. Paste
+it, drop a `.json` file, or load the sample, and it answers the question a formatter can’t: **what am
+I looking at, and is anything about this structure worth investigating?** Its premise is deliberate:
+
+> **Observation before judgment.**
+
+JSON Crime Scene inspects and explains — it **never** repairs, reorders, or rewrites your source.
+Unusual JSON is _described_, not condemned: it says _mixed element types_, not _invalid array_.
+
+- **Strict JSON, with useful errors.** The primary format is standard JSON — no comments, trailing
+  commas, single quotes, or unquoted keys. Invalid input gets a readable diagnosis with the **line,
+  column, and a source snippet with a caret**, and common mistakes are named for what they are
+  (“Trailing comma before a closing brace”, “Single quotes are not valid in JSON”, “Unexpected extra
+  content after the JSON value”). Validity is decided by the platform’s own `JSON.parse`, so the
+  yes/no always matches the specification.
+- **A structural profile.** Root type; total values; object / array / string / number / boolean /
+  null counts; property count; maximum nesting depth; source size; duplicate-key groups; and a
+  severity-tallied finding count. No fake “health score” — the numbers themselves are the point.
+- **An explorable tree.** Expand and collapse objects and arrays, with value types differentiated by
+  shape (quotes, keyword forms) as well as colour. Large containers render a bounded number of
+  children with an explicit “show more”, and the **true child count is always shown** — exact
+  statistics never depend on what is currently rendered.
+- **A node inspector.** Select any node for its type, a bounded value view, child count / string
+  length, depth, source position, and copyable **JSON Pointer** (RFC 6901) and JavaScript-style path
+  — the latter using bracket notation for any key that isn’t a safe identifier.
+- **Diagnostic findings.** Each carries a severity (info / notice / warning), a plain-language
+  explanation and _why_, affected paths, exact counts, and representative examples that jump to the
+  node in the tree. The marquee finding is **duplicate object keys** — recovered from the source with
+  their positions, because `JSON.parse` silently keeps only the last. Others cover key anomalies
+  (leading/trailing whitespace, case-only collisions, empty names, **invisible characters**), mixed
+  array element types, empty/deep/large structural hotspots, and frequently-null fields.
+- **Array-of-object shape analysis.** For arrays of objects it groups the objects by a normalized
+  key-set signature (an O(_n_) pass, not pairwise comparison), reports the **dominant shape** and each
+  variant’s missing/extra keys and conformity, and flags **per-field type inconsistency** — e.g.
+  “`amount` is a number in 4 of 5 objects but a string at `/orders/4/amount`”.
+- **Numeric safety.** Because the exact numeric literal is read straight from the source before any
+  coercion, integers beyond JavaScript’s safe range (±2⁵³−1) are flagged with the value they’d
+  silently round to — a high-value check a plain parse can’t make.
+- **Bounded search.** Search property names and value previews; results show the path and jump to the
+  node, capped while still reporting the true match total.
+- **Derived views & report.** Optional **pretty / minified / sorted-key** views, emitted from the tree
+  so numbers and string escapes are reproduced exactly and **duplicate keys are preserved** (key
+  sorting is disabled when duplicates make member order meaningful). Copy paths or values, and export
+  a Markdown or JSON **diagnostic report** — which describes the analysis and never embeds the source.
+- **A built-in sample** (an orders API response) demonstrates every finding at a glance.
+
 ---
 
 ## Running it
@@ -187,6 +235,7 @@ app/                          Next.js App Router
   tools/slopometer/           the slopometer route
   tools/csv-autopsy/          the CSV Autopsy route
   tools/diffoscope/           the Diffoscope route
+  tools/json-crime-scene/     the JSON Crime Scene route
   layout.tsx, globals.css     shell, design tokens, theming
 components/
   site/                       header, footer, theme toggle
@@ -194,6 +243,7 @@ components/
   slopometer/                 slopometer React UI (+ its own CSS module)
   csv-autopsy/                CSV Autopsy React UI (+ its own CSS module)
   diffoscope/                 Diffoscope React UI (+ its own CSS module)
+  json-crime-scene/           JSON Crime Scene React UI (+ its own CSS module)
 lib/inspector/                framework-agnostic engine (the tested core)
   categories.ts               the category taxonomy + metadata
   named-characters.ts         curated names / abbreviations / clean-targets
@@ -231,6 +281,20 @@ lib/diffoscope/               framework-agnostic engine (the tested core)
   samples.ts                  the three built-in example pairs
   index.ts                    public API: analyzePair() + diffInMode() + re-exports
   *.test.ts                   unit tests
+lib/json-crime-scene/         framework-agnostic engine (the tested core)
+  types.ts                    shared domain types (nodes, findings, shapes, profile)
+  parse.ts                    jsonc strict parse + JSON.parse oracle, LineIndex, error translation
+  traverse.ts                 iterative tree build + stats + duplicate-key detection
+  paths.ts                    JSON Pointer (RFC 6901) + JavaScript-path builders
+  numbers.ts                  safe-integer / overflow inspection from the raw literal
+  shapes.ts                   array-of-object shape + field-type + nullability analysis
+  diagnostics.ts              the observational finding rules + prioritization
+  transform.ts                lossless, duplicate-safe pretty / minify / sort emitter
+  search.ts                   bounded key/value search
+  report.ts                   Markdown / JSON report rendering (never embeds the source)
+  sample-data.ts              the built-in sample (stored as literal JSON source)
+  index.ts                    public API: analyzeJson() + re-exports
+  *.test.ts                   unit tests
 ```
 
 Each tool's detection logic lives in its `lib/` engine with **no React dependency**, so it is
@@ -240,7 +304,7 @@ thoroughly unit-tested in isolation from rendering.
 
 ## Technical notes & deliberate choices
 
-- **Stack:** Next.js 15 (App Router) + React 19 + TypeScript, static export. No web fonts
+- **Stack:** Next.js 16 (App Router) + React 19 + TypeScript, static export. No web fonts
   (system font stacks only), so builds work offline and no font is ever fetched at runtime.
   Styling is hand-written CSS with design tokens + CSS Modules — no CSS framework.
 - **Detection is property-driven.** Rather than hardcoding thousands of code points,
@@ -259,6 +323,19 @@ thoroughly unit-tested in isolation from rendering.
   in-memory strings, never given a URL or a worker, so it makes no network requests. Everything
   above tokenization — header detection, blank/ragged-row accounting, type inference, and every
   diagnostic — is the engine’s own, computed from the raw rows Papa returns.
+- **JSON Crime Scene’s one dependency is a source-preserving parser.** Correct duplicate-key
+  detection is impossible after `JSON.parse` (which keeps only the last value), and safe-integer
+  detection is impossible after a number is coerced to a double. Both need a parser that preserves the
+  source: [`jsonc-parser`](https://github.com/microsoft/node-jsonc-parser) (VS Code’s scanner,
+  zero-dependency, MIT), run in **strict** mode (`disallowComments`, no trailing commas). It supplies
+  a syntax tree with exact offsets — so every number’s raw literal and every duplicate key is
+  recoverable — and structured error codes that translate cleanly into readable messages. The
+  platform’s `JSON.parse` is kept as the **authority on validity**, so the yes/no can never drift from
+  the specification, and both recursive parsers are wrapped so pathologically deep input degrades to an
+  honest “too complex” notice instead of crashing the tab. Everything above the parse — the domain
+  tree, statistics, shape analysis, and every diagnostic — is the engine’s own, and the same
+  `classify()` that powers the Invisible Character Inspector names the invisible characters found in
+  keys and string values.
 - **Diffoscope adds no dependency.** Its diff is the standard **Myers O(ND)** shortest-edit-script
   over token arrays — a small, deterministic, well-understood algorithm (checked in tests against a
   brute-force LCS), not a novel one. A general diff library was considered and declined: the common
@@ -300,6 +377,13 @@ thoroughly unit-tested in isolation from rendering.
   inputs fall back to an approximate block diff, with the summary counts kept exact — a Web Worker
   would be the next step. Subtle-difference findings are derived from the character diff and
   suppressed when the two inputs differ substantially, so they stay signal rather than noise.
+- **JSON Crime Scene inspects one document — nothing more.** No JSON5 / YAML / TOML / NDJSON, no
+  JSON Schema generation or validation, no fetching or diffing, and no editing through the tree —
+  deliberately. It reads one JSON value and profiles it unusually well. Analysis is a set of near-O(_n_)
+  passes with capped examples and bounded, lazily-rendered tree output; a Web Worker would be the next
+  step for very large documents. Value-preview search matches the first ~200 characters of long
+  strings rather than re-scanning megabytes on every keystroke, and shape analysis groups objects by
+  normalized key set instead of comparing them pairwise.
 
 ---
 

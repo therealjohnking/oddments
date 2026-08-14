@@ -102,6 +102,28 @@ export default function HomePage() {
           </ul>
         </Link>
 
+        <Link className={styles.card} href="/tools/json-crime-scene">
+          <span className={styles.cardTop}>
+            <span className={styles.cardTitle}>JSON Crime Scene</span>
+            <span className={styles.cardArrow} aria-hidden="true">
+              →
+            </span>
+          </span>
+          <span className={styles.cardDesc}>
+            A local-first instrument for understanding one JSON document. Paste or drop it and get a
+            structural profile, an explorable tree with exact paths, and diagnostic findings &mdash;
+            duplicate keys that <code>JSON.parse</code> hides, inconsistent object shapes, mixed
+            types, and integers that quietly lose precision. It answers &ldquo;what am I looking
+            at?&rdquo;
+          </span>
+          <ul className={styles.tags}>
+            <li className={styles.tag}>tree explorer</li>
+            <li className={styles.tag}>duplicate keys</li>
+            <li className={styles.tag}>JSON Pointer</li>
+            <li className={styles.tag}>safe-integer</li>
+          </ul>
+        </Link>
+
         <p className={styles.note}>
           More instruments are on the bench. Each one arrives only when it&rsquo;s genuinely
           finished — not before.
