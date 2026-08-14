@@ -105,6 +105,44 @@ stragglers keeps its type and reports the stragglers as anomalies rather than be
 strings — never the network); every diagnostic on top of it is Oddments’ own. A built-in messy
 sample dataset lets you explore the whole tool immediately.
 
+### Diffoscope — `/tools/diffoscope`
+
+A human-oriented text comparison instrument. Paste an original into **A / Before** and a revision
+into **B / After** and it shows exactly what changed — and, just as importantly, **the differences
+your eyes slide past**. Its premise is deliberate:
+
+> **Show me what changed — even what I can’t see.**
+
+Diffoscope explains differences; it **never** edits your text, and it is emphatically not a merge
+editor. Comparison runs live as you type (no _Analyze_ button).
+
+- **Three granularities.** _Word_ (the default, best for prose), _Character_ (Unicode-correct —
+  grapheme clusters via `Intl.Segmenter`, so emoji, accents, combining sequences, and ZWJ emoji are
+  never split), and _Line_ (for code, config, Markdown, and generated output; LF/CRLF/CR are
+  preserved for diagnostics even though lines render normally).
+- **A clear result.** A polished **inline** view with semantic `<ins>`/`<del>` markup, plus a
+  **split** before/after reading. Insertions and deletions never rely on colour alone — underline
+  and strike-through, and `+`/`−` signs in line mode — and they stay legible in monochrome and
+  Windows High Contrast.
+- **The headline verdict.** One sentence on how the two inputs relate: _exactly identical_,
+  _identical except for line endings / whitespace / letter case / Unicode form / punctuation /
+  invisible characters_, a labelled _cosmetic_ combination of those, or _genuinely different_.
+- **“These look identical.”** When two strings look the same but fail an equality check, Diffoscope
+  locates the reason in plain language, with line:column positions: non-breaking vs ordinary spaces,
+  tabs vs spaces, trailing whitespace, zero-width characters and BOMs, curly vs straight quotes, the
+  hyphen/en-dash/em-dash family, the ellipsis character vs three periods, homoglyph letters,
+  letter-case slips, CRLF-vs-LF line endings, and NFC-equivalent (precomposed vs combining)
+  representations. These findings are derived from the character diff, so they point at real
+  correspondences and stay quiet when the inputs genuinely differ.
+- **Comparison lenses.** Optionally ignore _case_, ignore _whitespace_, or compare Unicode _NFC_
+  forms. A lens reinterprets how the two sides are matched — it never modifies either source, and the
+  UI says when a normalized comparison is in effect.
+- **Copy / export.** Copy a plain-text comparison summary, or a standard **line-oriented unified
+  diff** (headers, `@@` hunks, three lines of context, and a `\ No newline at end of file` marker) —
+  clearly labelled A → B. Diffoscope reads and explains; it does not apply patches.
+- **Three built-in examples** — a flagship "looks identical" pair that hides seven kinds of
+  difference, an ordinary prose revision, and a config change for line mode.
+
 ---
 
 ## Running it
@@ -148,12 +186,14 @@ app/                          Next.js App Router
   tools/invisible-characters/ the inspector route
   tools/slopometer/           the slopometer route
   tools/csv-autopsy/          the CSV Autopsy route
+  tools/diffoscope/           the Diffoscope route
   layout.tsx, globals.css     shell, design tokens, theming
 components/
   site/                       header, footer, theme toggle
   inspector/                  inspector React UI (+ its own CSS module)
   slopometer/                 slopometer React UI (+ its own CSS module)
   csv-autopsy/                CSV Autopsy React UI (+ its own CSS module)
+  diffoscope/                 Diffoscope React UI (+ its own CSS module)
 lib/inspector/                framework-agnostic engine (the tested core)
   categories.ts               the category taxonomy + metadata
   named-characters.ts         curated names / abbreviations / clean-targets
@@ -177,6 +217,19 @@ lib/csv-autopsy/              framework-agnostic engine (the tested core)
   export.ts                   Markdown / JSON report rendering
   sample-data.ts              the deliberately-messy sample dataset
   index.ts                    public API: analyzeCsv() + re-exports
+  *.test.ts                   unit tests
+lib/diffoscope/               framework-agnostic engine (the tested core)
+  types.ts                    shared types (segments, verdict, findings, lens)
+  tokenize.ts                 grapheme / word / line tokenizers (offset-preserving)
+  myers.ts                    the Myers shortest-edit-script core (+ brute-force LCS check)
+  normalize.ts                comparison lenses + confusable/invisible folding
+  positions.ts                UTF-16 offset → line / code-point column
+  compare.ts                  ops → renderable inline segments + counts
+  diagnostics.ts              the verdict + located "these look identical" findings
+  unified-diff.ts             standard line-oriented unified diff (A → B)
+  stats.ts                    per-side chars / words / lines / bytes / line endings
+  samples.ts                  the three built-in example pairs
+  index.ts                    public API: analyzePair() + diffInMode() + re-exports
   *.test.ts                   unit tests
 ```
 
@@ -206,6 +259,15 @@ thoroughly unit-tested in isolation from rendering.
   in-memory strings, never given a URL or a worker, so it makes no network requests. Everything
   above tokenization — header detection, blank/ragged-row accounting, type inference, and every
   diagnostic — is the engine’s own, computed from the raw rows Papa returns.
+- **Diffoscope adds no dependency.** Its diff is the standard **Myers O(ND)** shortest-edit-script
+  over token arrays — a small, deterministic, well-understood algorithm (checked in tests against a
+  brute-force LCS), not a novel one. A general diff library was considered and declined: the common
+  ones split characters on **UTF-16 code units**, which mangles surrogate pairs and combining
+  sequences — exactly what Diffoscope must not do — so grapheme-cluster tokenization is required
+  regardless, at which point a library would only supply the array-diff core. Comparison units are
+  grapheme clusters (via `Intl.Segmenter`, with a code-point fallback), word/whitespace/punctuation
+  runs, or lines. The same `classify()` that powers the Invisible Character Inspector names the code
+  points a difference involves, so the two tools never keep contradictory Unicode knowledge.
 - **Accessibility.** The visual reveal is treated as a sighted enhancement (`aria-hidden`);
   the findings list, the expanded-text view, and the original textarea are the fully
   equivalent accessible surfaces. Severity is never encoded by colour alone (label + border +
@@ -231,6 +293,13 @@ thoroughly unit-tested in isolation from rendering.
   than a first cut allows. Analysis is synchronous (no Web Worker) with example caps and a row
   ceiling; that keeps large-but-reasonable files responsive, and a worker would be the next step for
   very large ones.
+- **Diffoscope is a comparison instrument, not a merge editor.** No three-way merge, no patch
+  application, no directory/binary/PDF/image comparison, and no semantic/AST/LLM diffing —
+  deliberately. Character comparison (the expensive grapheme-level path) is gated behind a one-click
+  confirmation for very large inputs; rendered segments are capped and pathologically-different
+  inputs fall back to an approximate block diff, with the summary counts kept exact — a Web Worker
+  would be the next step. Subtle-difference findings are derived from the character diff and
+  suppressed when the two inputs differ substantially, so they stay signal rather than noise.
 
 ---
 

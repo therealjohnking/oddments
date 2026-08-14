@@ -81,6 +81,27 @@ export default function HomePage() {
           </ul>
         </Link>
 
+        <Link className={styles.card} href="/tools/diffoscope">
+          <span className={styles.cardTop}>
+            <span className={styles.cardTitle}>Diffoscope</span>
+            <span className={styles.cardArrow} aria-hidden="true">
+              →
+            </span>
+          </span>
+          <span className={styles.cardDesc}>
+            A human-oriented text comparison instrument. Paste two versions and see exactly what
+            changed &mdash; by word, character, or line &mdash; including the differences your eyes
+            slide past: whitespace, invisible characters, curly-vs-straight punctuation, and
+            Unicode-normalization quirks. It explains what looks identical but isn&rsquo;t.
+          </span>
+          <ul className={styles.tags}>
+            <li className={styles.tag}>word / char / line</li>
+            <li className={styles.tag}>invisible diffs</li>
+            <li className={styles.tag}>unicode-aware</li>
+            <li className={styles.tag}>unified diff</li>
+          </ul>
+        </Link>
+
         <p className={styles.note}>
           More instruments are on the bench. Each one arrives only when it&rsquo;s genuinely
           finished — not before.
