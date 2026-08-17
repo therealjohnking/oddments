@@ -191,6 +191,48 @@ Unusual JSON is _described_, not condemned: it says _mixed element types_, not _
   a Markdown or JSON **diagnostic report** — which describes the analysis and never embeds the source.
 - **A built-in sample** (an orders API response) demonstrates every finding at a glance.
 
+### Corporate Phrase Bingo — `/tools/corporate-bingo`
+
+A bingo card for surviving meetings one cliché at a time. Open it and you immediately have a
+randomized 5×5 card drawn from a built-in deck of corporate phrases; tap each square as you hear it
+said, and win on any row, column, or diagonal. Its premise is deliberate:
+
+> **Turn strategic alignment into a competitive event.**
+
+It is a game rather than a diagnostic instrument — but it is built like the rest of Oddments:
+composed, accessible, and entirely local. No account, no network, and _no microphone_ — you tap a
+square when somebody says the phrase; that is the game.
+
+- **A card, ready to play.** A first-time visitor never has to click “Generate” — a valid card is
+  dealt on load, with a FREE center and no phrase repeated. The default deck holds ~75 phrases people
+  plausibly say in real meetings (not company-specific jargon), so two cards look meaningfully
+  different. The shuffle is a clean partial Fisher–Yates over an **injectable** random source, so the
+  engine is deterministic under test.
+- **Winning, honestly.** All twelve standard lines are recognized — five rows, five columns, two
+  diagonals — with the FREE center counting as marked. A card can hold **several** completed lines at
+  once, and play continues past the first: the tool reports whether you have bingo, how many lines are
+  complete, and exactly which squares participate. Mark all 24 and it recognizes a **full card**.
+- **Squares that are real controls.** Each square is a large toggle button (a labelled group, not a
+  fragile ARIA grid), keyboard-operable with visible focus, its marked state carried by `aria-pressed`.
+  Marked, part-of-a-completed-line, and unmarked are always distinguishable **without relying on
+  colour** — a check glyph, an inset ring, and fills of different weight — and hold up under Windows
+  High Contrast.
+- **A restrained bingo moment.** The first line lands a small, composed banner (_“Bingo. Alignment has
+  been achieved.”_) — no confetti, no sound, no modal — announced once to a screen reader without
+  live-region spam, and suppressed under `prefers-reduced-motion`. The card stays fully usable
+  underneath it.
+- **Your own phrases.** A plain one-phrase-per-line editor lets you replace the deck. Input is
+  trimmed, blank lines are ignored, and duplicates (ignoring case and spacing) are counted once; the
+  tool explains the 24-phrase minimum, never discards text you are still editing, and can restore the
+  default deck at any time.
+- **Reset vs New card.** _Reset marks_ clears your taps but keeps the exact same card (it never
+  reshuffles). _New card_ deals a fresh one, asking for a light inline confirmation only when there is
+  real progress to lose.
+- **Remembered locally.** Your current card, its marks, the deck choice, and any custom phrases are
+  saved in `localStorage` and restored on your next visit. Stored data is validated defensively:
+  anything corrupt, incompatible, or from a future version is discarded and a fresh card is dealt
+  rather than crashing the page.
+
 ---
 
 ## Running it
@@ -236,6 +278,7 @@ app/                          Next.js App Router
   tools/csv-autopsy/          the CSV Autopsy route
   tools/diffoscope/           the Diffoscope route
   tools/json-crime-scene/     the JSON Crime Scene route
+  tools/corporate-bingo/      the Corporate Phrase Bingo route
   layout.tsx, globals.css     shell, design tokens, theming
 components/
   site/                       header, footer, theme toggle
@@ -244,6 +287,7 @@ components/
   csv-autopsy/                CSV Autopsy React UI (+ its own CSS module)
   diffoscope/                 Diffoscope React UI (+ its own CSS module)
   json-crime-scene/           JSON Crime Scene React UI (+ its own CSS module)
+  corporate-bingo/            Corporate Phrase Bingo React UI (+ its own CSS module)
 lib/inspector/                framework-agnostic engine (the tested core)
   categories.ts               the category taxonomy + metadata
   named-characters.ts         curated names / abbreviations / clean-targets
@@ -294,6 +338,17 @@ lib/json-crime-scene/         framework-agnostic engine (the tested core)
   report.ts                   Markdown / JSON report rendering (never embeds the source)
   sample-data.ts              the built-in sample (stored as literal JSON source)
   index.ts                    public API: analyzeJson() + re-exports
+  *.test.ts                   unit tests
+lib/corporate-bingo/          framework-agnostic engine (the tested core)
+  types.ts                    shared types + geometry constants (5×5, FREE center)
+  default-phrases.ts          the built-in corporate-phrase deck
+  deck.ts                     phrase normalization + deck validation
+  generate.ts                 injectable-RNG shuffle/sample + card generation
+  bingo.ts                    the twelve win-lines + pure win detection
+  game.ts                     pure state transitions (deal / toggle / reset / deck)
+  format.ts                   pluralization, line-list + announcement copy, card serial
+  persistence.ts              defensive save / load / validate / migrate
+  index.ts                    public API + re-exports
   *.test.ts                   unit tests
 ```
 
@@ -353,6 +408,15 @@ thoroughly unit-tested in isolation from rendering.
 - **Large inputs.** Analysis is a single O(n) pass; re-analysis is deferred (`useDeferredValue`)
   so typing stays responsive. The stored findings/line arrays are capped for pathological
   inputs while the summary counts stay exact, and the reveal renders a bounded number of lines.
+- **Corporate Phrase Bingo adds no dependency, and isolates its randomness.** A bingo game needs a
+  shuffle, which is the one place Oddments is non-deterministic — so the randomness is a _parameter_,
+  not a hidden dependency. The card is dealt by a small partial Fisher–Yates over the deck that takes
+  an injectable random source (the browser’s `Math.random` in the app, a seeded generator in tests),
+  and win detection is a pure function of the marks array. Card generation and `localStorage` are
+  client-only, so a `useSyncExternalStore` snapshot keeps the first render identical on server and
+  client and the real card is dealt right after hydration — no mismatch, and no “Generate” button.
+  Stored state is treated as untrusted: the card is structurally validated and lesser fields are
+  coerced, so incompatible or corrupt data degrades to a fresh card instead of a broken page.
 
 ### Intentionally deferred
 
@@ -384,6 +448,13 @@ thoroughly unit-tested in isolation from rendering.
   step for very large documents. Value-preview search matches the first ~200 characters of long
   strings rather than re-scanning megabytes on every keystroke, and shape analysis groups objects by
   normalized key set instead of comparing them pairwise.
+- **Corporate Phrase Bingo is one bingo card — nothing more.** No multiplayer, no shared or live
+  games, no accounts, and no scores, points, streaks, or achievements — deliberately; it is a game,
+  not a gamification dashboard. **Shareable cards** were considered and deferred: a self-contained
+  share URL would have to carry all 24 phrases (custom decks aren’t on the recipient’s device), and a
+  seed-only link would only work for the default deck — neither is cleanly bounded, so it is left out
+  rather than half-built. And of course nothing here listens: the phrases are marked by a human tap,
+  never by a microphone or transcription.
 
 ---
 

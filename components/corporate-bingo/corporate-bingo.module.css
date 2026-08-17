@@ -1,0 +1,465 @@
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.tool {
+  padding-block: clamp(1.5rem, 4vw, 2.5rem) 3rem;
+}
+
+.toolHeader {
+  margin-bottom: 0.5rem;
+}
+
+.breadcrumb {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-faint);
+  margin: 0 0 0.5rem;
+}
+
+.breadcrumb a {
+  color: var(--text-muted);
+}
+
+.title {
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+  margin: 0;
+}
+
+.subtitle {
+  margin: 0.5rem 0 0;
+  max-width: 66ch;
+  color: var(--text-muted);
+}
+
+.premise {
+  margin: 0.5rem 0 0;
+  max-width: 66ch;
+  font-size: 0.9rem;
+  color: var(--text-faint);
+}
+
+.premise strong {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  font-weight: 550;
+  padding: 0.42rem 0.85rem;
+  min-height: 38px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--text-faint);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnPrimary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--accent-contrast);
+}
+
+.btnGhost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.btnGhost:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* ── Current-card controls ──────────────────────────────────────────────── */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.confirmPrompt {
+  font-size: 0.88rem;
+  color: var(--sev-warning-fg);
+  margin-right: 0.15rem;
+}
+
+/* ── Card area ──────────────────────────────────────────────────────────── */
+.cardArea {
+  margin-top: 1.1rem;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.serial {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+
+.progress {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* ── The board ──────────────────────────────────────────────────────────── */
+.board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(0.3rem, 0.9vw, 0.6rem);
+  margin-top: 0.85rem;
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  aspect-ratio: 1 / 1;
+  padding: 0.45rem 0.4rem;
+  margin: 0;
+  appearance: none;
+  font-family: inherit;
+  font-size: clamp(0.63rem, 1.5vw, 0.92rem);
+  line-height: 1.2;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.08s ease;
+}
+
+button.cell {
+  cursor: pointer;
+}
+
+button.cell:hover {
+  border-color: var(--accent);
+}
+
+button.cell:active {
+  transform: scale(0.97);
+}
+
+.cellText {
+  display: block;
+}
+
+/* The mark: a small check that fades/scales in. Its presence (not its colour) is
+   what tells a sighted user a square is marked. */
+.check {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  opacity: 0;
+  transform: scale(0.5);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.check::before {
+  content: '✓';
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+}
+
+/* FREE centre: always marked, never a control. */
+.cell[data-free='true'] {
+  background: var(--surface-2);
+  border-style: dashed;
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.freeText {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+
+/* Marked (a plain tap): soft fill, accent border, the check shows. */
+.cell[data-marked='true'] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.cell[data-marked='true'] .check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Part of a completed line: solid fill plus an inset ring, so it is clearly a
+   step beyond merely marked — and the ring is a shape cue, not just colour. */
+.cell[data-line='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  border-style: solid;
+  color: var(--accent-contrast);
+  font-weight: 650;
+  box-shadow: inset 0 0 0 2px var(--accent-contrast);
+}
+
+.cell[data-line='true'] .check::before,
+.cell[data-line='true'] .freeText {
+  color: var(--accent-contrast);
+}
+
+.cellSkeleton {
+  background: var(--surface-2);
+  border-color: var(--border);
+  border-style: solid;
+  box-shadow: none;
+  cursor: default;
+}
+
+/* ── Bingo moment ───────────────────────────────────────────────────────── */
+.celebration {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  animation: celebrationIn 0.3s ease;
+}
+
+@keyframes celebrationIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.celebrationMark {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.celebrationText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.celebrationHeadline {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.celebrationNote {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ── Deck editor ────────────────────────────────────────────────────────── */
+.deckPanel {
+  margin-top: 1.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.deckSummary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.deckSummary::-webkit-details-marker {
+  display: none;
+}
+
+.deckSummary::before {
+  content: '▸';
+  color: var(--text-faint);
+  font-size: 0.8rem;
+}
+
+.deckPanel[open] .deckSummary::before {
+  content: '▾';
+}
+
+.deckSummaryTitle {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.deckSummaryMeta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-faint);
+}
+
+.deckBody {
+  padding: 0.25rem 1rem 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.field {
+  display: block;
+  margin-top: 0.8rem;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.deckTextarea {
+  width: 100%;
+  min-height: 220px;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+  box-shadow: var(--shadow-sm) inset;
+}
+
+.deckHelp {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+.deckOk {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  color: var(--sev-info-fg);
+}
+
+.deckError {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  color: var(--sev-warning-fg);
+  background: var(--sev-warning-bg);
+  border: 1px solid var(--sev-warning-border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.7rem;
+}
+
+.deckActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .board {
+    gap: 0.3rem;
+  }
+  .cell {
+    padding: 0.3rem 0.25rem;
+    font-size: clamp(0.6rem, 2.7vw, 0.82rem);
+  }
+  .check {
+    top: 3px;
+    right: 3px;
+    width: 12px;
+    height: 12px;
+  }
+  .check::before {
+    font-size: 9px;
+  }
+}
+
+/* ── Forced colours (Windows High Contrast) ─────────────────────────────── */
+@media (forced-colors: active) {
+  /* Background fills are dropped in forced colours, so lean on shape: the check
+     glyph marks a square, and a completed-line square gets a heavy outline. */
+  .cell[data-marked='true'] {
+    outline: 1px solid CanvasText;
+  }
+  .cell[data-line='true'] {
+    outline: 3px solid Highlight;
+    outline-offset: -3px;
+  }
+  .celebrationMark,
+  .celebration {
+    border: 1px solid CanvasText;
+  }
+}

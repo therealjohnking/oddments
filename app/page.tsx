@@ -124,6 +124,27 @@ export default function HomePage() {
           </ul>
         </Link>
 
+        <Link className={styles.card} href="/tools/corporate-bingo">
+          <span className={styles.cardTop}>
+            <span className={styles.cardTitle}>Corporate Phrase Bingo</span>
+            <span className={styles.cardArrow} aria-hidden="true">
+              →
+            </span>
+          </span>
+          <span className={styles.cardDesc}>
+            A bingo card for surviving meetings one cliché at a time. Deal a randomized 5&times;5
+            card of corporate phrases, tap them as you hear them, and win on rows, columns, or
+            diagonals. Customize the deck and keep your card between sessions. Turn strategic
+            alignment into a competitive event.
+          </span>
+          <ul className={styles.tags}>
+            <li className={styles.tag}>meeting survival</li>
+            <li className={styles.tag}>5&times;5 card</li>
+            <li className={styles.tag}>custom deck</li>
+            <li className={styles.tag}>local-only</li>
+          </ul>
+        </Link>
+
         <p className={styles.note}>
           More instruments are on the bench. Each one arrives only when it&rsquo;s genuinely
           finished — not before.
