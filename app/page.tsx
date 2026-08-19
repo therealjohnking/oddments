@@ -145,6 +145,28 @@ export default function HomePage() {
           </ul>
         </Link>
 
+        <Link className={styles.card} href="/tools/date-goblin">
+          <span className={styles.cardTop}>
+            <span className={styles.cardTitle}>Date Goblin</span>
+            <span className={styles.cardArrow} aria-hidden="true">
+              →
+            </span>
+          </span>
+          <span className={styles.cardDesc}>
+            A local-first date/time interpreter. Paste an ISO timestamp, Unix time, wall-clock time,
+            or Excel serial and see what it actually means &mdash; an exact instant or a local time
+            still needing a zone &mdash; with UTC and zone offsets, Unix seconds vs. milliseconds,
+            ISO week numbers, and the DST folds and gaps most tools quietly paper over. It makes the
+            temporal nonsense legible.
+          </span>
+          <ul className={styles.tags}>
+            <li className={styles.tag}>instant vs. local</li>
+            <li className={styles.tag}>DST folds &amp; gaps</li>
+            <li className={styles.tag}>unix &amp; excel</li>
+            <li className={styles.tag}>IANA zones</li>
+          </ul>
+        </Link>
+
         <p className={styles.note}>
           More instruments are on the bench. Each one arrives only when it&rsquo;s genuinely
           finished — not before.

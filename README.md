@@ -233,6 +233,61 @@ square when somebody says the phrase; that is the game.
   anything corrupt, incompatible, or from a future version is discarded and a fresh card is dealt
   rather than crashing the page.
 
+### Date Goblin — `/tools/date-goblin`
+
+A local-first date/time interpretation and conversion instrument. Paste an ISO timestamp, a Unix
+time, a local wall-clock time, or an Excel serial, and it answers the questions a formatter can’t:
+**what exact moment is this, and what does this clock reading actually mean in a given zone?** Its
+premise is deliberate:
+
+> **Make the temporal nonsense legible — never hide ambiguity behind a convenient guess.**
+
+- **Instant vs. local time, made explicit.** The tool’s central distinction runs through everything.
+  An **instant** (a Unix timestamp, or an ISO string carrying `Z`/an explicit offset) already pins one
+  moment on the global timeline; a zone only changes how it is _displayed_. A **local wall-clock
+  time** (an ISO datetime with no zone, an Excel serial) is just a clock reading until a zone is
+  applied — and that application can be ambiguous or impossible. Every interpretation is badged
+  `◎ Instant` or `◷ Local wall time` and says what format was recognized and what, if anything, was
+  assumed.
+- **DST folds and gaps are the flagship, not a footnote.** When a local time falls in an autumn
+  **fall-back**, it occurs twice — `2026-11-01 01:30` in `America/New_York` is both `-04:00` (EDT,
+  `05:30Z`) and `-05:00` (EST, `06:30Z`) — and the tool shows **both** instants and makes you choose,
+  rather than silently picking one. When a local time lands in a spring-forward **gap** —
+  `2026-03-08 02:30`, skipped as clocks jump `02:00 → 03:00` — it says the time never happens and
+  offers the two nearest real readings. Resolution is delegated to the **Temporal** API’s
+  `earlier`/`later` disambiguation and cross-checked by round-trip, so no DST rules are hand-rolled;
+  half-hour zones (Lord Howe) and southern-hemisphere zones are handled the same way.
+- **Conservative, explicit parsing.** Recognition is strict: extended ISO 8601 only (basic
+  separator-free forms are excluded because they collide with Unix), bare numbers as Unix timestamps,
+  and no `Date.parse` guesswork. A locale-ambiguous value like `03/04/26` is **refused** — it shows
+  both the month/day and day/month readings and asks for an ISO date — rather than guessing from the
+  browser’s locale. Explicit modes (ISO, Unix, Local, Excel) are always available when auto-detection
+  should not commit.
+- **Unix timestamps you can trust.** Seconds, milliseconds, microseconds, and nanoseconds, worked in
+  `bigint` nanoseconds so precision is never lost. Auto-detection uses digit count but **cross-checks
+  plausibility** and always names the alternative it set aside; when more than one unit lands on a
+  plausible date (the classic “is this seconds or milliseconds?” trap) it declines to guess and asks
+  for an explicit unit. `0`, negative timestamps, fractional seconds, and out-of-range values are all
+  handled honestly.
+- **The Excel 1900 leap-year bug, explained.** Excel’s 1900 date system treats 1900 as a leap year,
+  inventing a fictitious `1900-02-29` at serial 60 and shifting every serial ≥ 61 by a day. Date
+  Goblin models this exactly: serials 1–59 map straight, **serial 60 is reported as the unreal date it
+  is** (with its real neighbours, serial 59 = `1900-02-28` and serial 61 = `1900-03-01`), and ≥ 61 is
+  shifted back. The 1904 system is offered as an explicit alternative; the tool never guesses which
+  system a number came from.
+- **Representations and comparison.** Canonical ISO 8601 (UTC and the selected zone’s offset), Unix
+  seconds/milliseconds, epoch nanoseconds, and whether the value fits a JavaScript `Date` — each
+  copyable, plus a one-click diagnostic summary. A compact, bounded zone table shows the moment in
+  **UTC, your system zone, the source/selected zone, and a few comparison zones** you add through a
+  native searchable picker (real IANA identifiers, never abbreviations like “EST”).
+- **Calendar facts, precisely.** Weekday, day-of-year, **ISO week and ISO week-year** (correctly
+  distinct near New Year — `2027-01-01` is week 53 of **2026**), quarter, leap-year status, and days in
+  month — all computed deterministically from fixed English tables, never the machine’s locale.
+- **Local, and forgetful by design.** Your preferred mode, last-used zone, comparison zones, and
+  Excel/Unix preferences are remembered in `localStorage`; the **entered date/time is never saved** —
+  it may be sensitive operational data. Nothing is uploaded, there is no location lookup, and relative
+  time (“3 hours ago”) is computed against a shared minute-level clock with no per-second work.
+
 ---
 
 ## Running it
@@ -279,6 +334,7 @@ app/                          Next.js App Router
   tools/diffoscope/           the Diffoscope route
   tools/json-crime-scene/     the JSON Crime Scene route
   tools/corporate-bingo/      the Corporate Phrase Bingo route
+  tools/date-goblin/          the Date Goblin route
   layout.tsx, globals.css     shell, design tokens, theming
 components/
   site/                       header, footer, theme toggle
@@ -288,6 +344,7 @@ components/
   diffoscope/                 Diffoscope React UI (+ its own CSS module)
   json-crime-scene/           JSON Crime Scene React UI (+ its own CSS module)
   corporate-bingo/            Corporate Phrase Bingo React UI (+ its own CSS module)
+  date-goblin/                Date Goblin React UI (+ its own CSS module)
 lib/inspector/                framework-agnostic engine (the tested core)
   categories.ts               the category taxonomy + metadata
   named-characters.ts         curated names / abbreviations / clean-targets
@@ -349,6 +406,25 @@ lib/corporate-bingo/          framework-agnostic engine (the tested core)
   format.ts                   pluralization, line-list + announcement copy, card serial
   persistence.ts              defensive save / load / validate / migrate
   index.ts                    public API + re-exports
+  *.test.ts                   unit tests
+lib/date-goblin/              framework-agnostic engine (the tested core)
+  types.ts                    plain domain types (Instant, WallDateTime, Resolution, …)
+  temporal.ts                 the Temporal adapter (native-preferring, polyfill fallback)
+  core.ts                     Temporal → plain-domain converters (the library membrane)
+  parse.ts                    strict ISO / auto-detection / ambiguity (no Date.parse)
+  resolve.ts                  wall-time → instant with DST fold/gap classification
+  unix.ts                     Unix seconds/ms/µs/ns in bigint, unit disambiguation
+  excel.ts                    Excel 1900/1904 serials + the serial-60 phantom
+  calendar.ts                 weekday / day-of-year / ISO week + week-year facts
+  zones.ts                    IANA list, system zone, validation, offset/DST context
+  relative.ts                 deterministic relative-time phrasing (Intl.RelativeTimeFormat)
+  format.ts                   offsets, epoch-seconds decimals, fixed English name tables
+  range.ts                    the shared ±10⁸-day supported range
+  interpret.ts                orchestrator: parse → resolve → describe → findings
+  report.ts                   copyable diagnostic summary
+  persistence.ts              defensive settings save/load (never the entered value)
+  examples.ts                 the built-in demonstration set
+  index.ts                    public API: interpret() + re-exports
   *.test.ts                   unit tests
 ```
 
@@ -417,6 +493,24 @@ thoroughly unit-tested in isolation from rendering.
   client and the real card is dealt right after hydration — no mismatch, and no “Generate” button.
   Stored state is treated as untrusted: the card is structurally validated and lesser fields are
   coerced, so incompatible or corrupt data degrades to a fresh card instead of a broken page.
+- **Date Goblin’s one dependency is a standards-based date engine.** Correct DST fold/gap resolution,
+  ISO week-years, and nanosecond-faithful timestamps are exactly the kind of temporal logic that
+  should _not_ be hand-rolled — so Date Goblin sits on the **Temporal** API (a Stage-4 TC39
+  proposal). Because Temporal is not yet everywhere (Safari, and the Node/jsdom test runtime lack it),
+  a single focused module (`temporal.ts`) **prefers the host’s native `Temporal` when present and
+  falls back to [`temporal-polyfill`](https://github.com/fullcalendar/temporal-polyfill)** (MIT,
+  no `jsbi`/legacy transitive deps; it delegates zone data to the host `Intl`, so both paths read the
+  same current IANA database). That module is the only place the library is touched: every value the
+  engine returns is plain, serialisable domain data (`bigint` epoch-nanoseconds, numbers, strings), so
+  no Temporal object ever reaches React and swapping the engine would change one file. DST is resolved
+  via Temporal’s own `earlier`/`later` disambiguation and verified by round-trip; no zone rules are
+  written by hand.
+- **Date Goblin is forgetful on purpose, and hydration-safe.** The entered date/time is **never**
+  persisted (only settings are), because it may be sensitive; a reload starts blank. The system zone,
+  `localStorage`, and the clock are all environment reads, so — like Corporate Bingo — a
+  `useSyncExternalStore` snapshot and an adjust-state-during-render initialization keep the first
+  render identical on server and client, and relative time is driven by a shared minute-granularity
+  clock store rather than a per-component timer.
 
 ### Intentionally deferred
 
@@ -455,6 +549,15 @@ thoroughly unit-tested in isolation from rendering.
   seed-only link would only work for the default deck — neither is cleanly bounded, so it is left out
   rather than half-built. And of course nothing here listens: the phrases are marked by a human tap,
   never by a microphone or transcription.
+- **Date Goblin interprets and converts — it is not a calendar or scheduler.** No event creation,
+  reminders, recurrence, cron, business-day or holiday calculations, sunrise/sunset, NTP checks, or
+  geolocation — deliberately; it answers “what moment is this?”, unusually well. It leans on
+  **explicit, conservative parsing**: no natural-language dates (“next Tuesday”), no `Date.parse`
+  fallback, and genuinely ambiguous input is surfaced rather than guessed. Zone abbreviations (`EDT`,
+  `GMT+5:30`) are shown as _display only_ — the IANA identifier and numeric offset stay authoritative,
+  because an abbreviation is never a reliable zone. The comparison-zone table is intentionally capped
+  (this is an instrument, not a world-clock dashboard), and there is no analog clock, globe, or
+  calendar grid.
 
 ---
 
