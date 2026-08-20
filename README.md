@@ -352,6 +352,75 @@ Its premise is deliberate:
 
 ---
 
+### Pastewright — `/tools/pastewright`
+
+Markdown is great until you need to put it somewhere that isn’t. Pastewright takes Markdown you’ve
+copied from an LLM, a README, or your notes, and adapts it for a destination you choose — email and
+documents, LinkedIn, Slack, Reddit, or plain text — then shows you exactly what it changed. Its
+premise is deliberate:
+
+> **Write once. Paste where it belongs — transform representation, not authorship.**
+
+- **It never rewrites your words.** No summarising, paraphrasing, shortening, tone-shifting, hashtag
+  or emoji insertion, and no LLM. It changes only _structural representation_ — a heading becomes a
+  plain-text section label, a link becomes label + URL, a table becomes a readable record list —
+  while every word, and their order, come through faithfully. There are tests that assert the
+  author’s prose survives each destination unchanged.
+- **A real Markdown parser, not regexes.** The source is parsed with **micromark** (a CommonMark
+  state machine) via `mdast-util-from-markdown` plus the **GFM** extension, producing a proper
+  `mdast` tree — headings, emphasis, strong, strikethrough, ordered/unordered/nested/task lists,
+  blockquotes, links, autolinks, images, inline and fenced code (with language), thematic rules,
+  tables with alignment, escaped punctuation. Everything downstream walks that tree.
+- **Tables are a first-class problem, not an edge case.** LLMs love tables that look perfect in
+  Markdown and turn to mush anywhere else. Pastewright understands a table structurally and degrades
+  it deliberately: **real `<table>`** for rich text, a **Markdown pipe table** for Reddit, and for
+  plain-text destinations either a **bordered aligned table** or a **record layout** (one labelled
+  block per row). The aligned table is genuinely robust: it draws restrained `|` column separators
+  and a header rule, targets a **bounded width** rather than trusting the destination to wrap, and
+  **wraps cell contents to their column** — so a logical row can span several physical lines with
+  continuation text kept under the correct cell, its height set by the tallest cell, and long
+  unbroken tokens (URLs) hard-broken instead of blowing up the layout. A deterministic three-tier
+  **Auto** strategy chooses **aligned** for compact tables, **wrapped aligned** for moderately wide
+  ones, and **records** when there are too many columns for columns to read well — from the table’s
+  shape and the destination, never from viewport width, so the copied result is stable. A restrained
+  **Auto / Aligned / Records** override is offered where it makes sense, and choosing **Aligned**
+  explicitly always uses the wrapping renderer rather than demoting a wide table to records. Every
+  header and every cell is preserved; escaped pipes, empty cells, inline formatting inside cells,
+  Unicode, and ragged rows are all handled, and column widths are measured by **display width**
+  (grapheme-aware, CJK-wide), not UTF-16 length.
+- **Honest destinations, verified — not assumed.** Slack’s composer does **not** reliably convert
+  pasted Markdown, so the Slack profile emits plain text, drops emphasis it can’t honour, and rides
+  compact tables **inside a ` ``` ` code block** so their columns actually line up. LinkedIn gets
+  clean plain text with **no pseudo-bold Unicode letters** — and because it renders posts in a
+  **proportional font** that re-wraps text, aligned columns can’t survive there, so LinkedIn tables
+  are **always the record layout** (the aligned option isn’t even offered), headings are plain section
+  labels rather than box-drawing underlines, and a horizontal rule becomes a single restrained em dash
+  instead of a long solid-looking bar. Reddit keeps Markdown (tables and fenced code included) and
+  adapts only what Reddit can’t show — images become links, task checkboxes become box glyphs. Plain
+  text stays deliberately formatted, not merely stripped.
+- **Standards-based rich clipboard.** The rich-text destination writes both **`text/html`** and
+  **`text/plain`** via `ClipboardItem`, so the receiving app can choose, and the plain-text fallback
+  stays useful on its own. When rich writing is unavailable, unsupported, denied, or needs a secure
+  context, it **degrades gracefully** — copies plain text and says what happened — rather than
+  breaking.
+- **No XSS path, by construction.** Raw HTML in the source is treated as **literal text and escaped**
+  — never rendered. The rich output is built from a small controlled node tree (the single source of
+  truth for both the clipboard HTML _and_ the React preview, so they can’t drift); all text is escaped
+  at serialisation, `href`s are scheme-checked (`javascript:` and friends become inert text), images
+  become labelled links rather than fetched or embedded, and nothing reaches the DOM through
+  `dangerouslySetInnerHTML`.
+- **Show the transformation, don’t hide it.** A **Destination adjustments** report says, in plain
+  language, what happened — “one 5-column table became four record blocks”, “3 links shown as label +
+  URL”, “bold and italic can’t be shown here; text kept without emphasis” — aggregated sensibly (one
+  note per class of construct, never one per bold word). A compact status — **Preserved**,
+  **Adapted**, or **Formatting compromises** — is derived from the findings, and ordinary destination
+  adaptation is described as an adjustment, never an error.
+- **Local, and forgetful by design.** Only your **last destination** and **table-layout preference**
+  are remembered; the Markdown source and every generated output are **never saved**. Nothing is
+  uploaded, and there is no telemetry, analytics, external conversion API, or account.
+
+---
+
 ## Running it
 
 Requires a recent Node.js (18.18+; developed on Node 22+).
@@ -398,6 +467,7 @@ app/                          Next.js App Router
   tools/corporate-bingo/      the Corporate Phrase Bingo route
   tools/date-goblin/          the Date Goblin route
   tools/regex-workbench/      the Regex Workbench route
+  tools/pastewright/          the Pastewright route
   layout.tsx, globals.css     shell, design tokens, theming
 components/
   site/                       header, footer, theme toggle
@@ -409,6 +479,7 @@ components/
   corporate-bingo/            Corporate Phrase Bingo React UI (+ its own CSS module)
   date-goblin/                Date Goblin React UI (+ its own CSS module)
   regex-workbench/            Regex Workbench React UI + the Blob-worker executor (+ CSS module)
+  pastewright/                Pastewright React UI + rich-clipboard + RichNode preview (+ CSS module)
 lib/inspector/                framework-agnostic engine (the tested core)
   categories.ts               the category taxonomy + metadata
   named-characters.ts         curated names / abbreviations / clean-targets
@@ -508,6 +579,23 @@ lib/regex-workbench/          framework-agnostic engine (the tested core)
   limits.ts                   match cap, worker timeout, render caps
   persistence.ts              defensive settings save/load (flags only, never content)
   index.ts                    public API: compile/execute/enrich/explain/diagnose/replace
+  *.test.ts                   unit tests
+lib/pastewright/              framework-agnostic engine (the tested core)
+  types.ts                    plain domain types (destination, findings, RichNode, stats)
+  parse.ts                    the micromark + GFM → mdast seam
+  width.ts                    grapheme-aware display-width measurement (CJK/emoji)
+  inline.ts                   inline phrasing → plain text (links/images/emphasis)
+  tables.ts                   table model + aligned / record rendering + Auto heuristic
+  plain-text.ts               policy-driven block renderer (LinkedIn / Slack / Plain)
+  rich-text.ts                mdast → controlled RichNode tree → safe HTML + preview
+  reddit.ts                   mdast → Reddit Markdown (to-markdown) + honest adaptations
+  profiles.ts                 the five destination profiles + plain-text policies
+  transform.ts                orchestrator: parse → render → report
+  report.ts                   aggregated findings + status classification
+  util.ts                     HTML escaping, URL scheme-check, definitions, block joining
+  examples.ts                 the built-in demonstration set
+  persistence.ts              defensive settings save/load (preferences only, never content)
+  index.ts                    public API: transform() + re-exports
   *.test.ts                   unit tests
 ```
 
@@ -616,6 +704,32 @@ thoroughly unit-tested in isolation from rendering.
   “character position”; and it distinguishes an unmatched capture from an empty one. Only the flags
   are persisted — the pattern, test text, and replacement are treated as potentially sensitive and
   never saved.
+- **Pastewright’s dependencies are a real Markdown parser stack, and they’re earned.** Correct
+  CommonMark + GFM parsing — nested lists, task-list state, tables with per-column alignment,
+  escaped pipes inside cells, fenced-code language labels, raw HTML as distinct nodes — is a genuine
+  state machine, not something to approximate with regexes. So parsing sits on **micromark** via
+  [`mdast-util-from-markdown`](https://github.com/syntax-tree/mdast-util-from-markdown) +
+  [`micromark-extension-gfm`](https://github.com/micromark/micromark-extension-gfm) /
+  [`mdast-util-gfm`](https://github.com/syntax-tree/mdast-util-gfm), and the Reddit destination
+  re-serialises with [`mdast-util-to-markdown`](https://github.com/syntax-tree/mdast-util-to-markdown)
+  rather than a hand-rolled Markdown writer (all MIT, pure ESM, browser/static-export safe, `npm
+audit` clean). The `mdast` tree is exactly the shape the transform needs; every renderer walks it,
+  and nothing downstream re-parses source. The engine keeps that tree behind its own domain
+  functions, so it has no React dependency and could be extracted later.
+- **Pastewright transforms representation, not authorship, and has no XSS path by construction.**
+  It never rewrites, summarises, or “improves” prose — there are tests asserting the author’s words
+  survive each destination — it only re-represents structure. Raw HTML in the source is treated as
+  **literal text and escaped**, never rendered; the rich-text output is built from a small controlled
+  node tree that is the single source of truth for both the `text/html` clipboard payload _and_ the
+  React preview (so they can’t drift), with all text escaped at serialisation, `href`s scheme-checked
+  (`javascript:` becomes inert text), images rendered as labelled links rather than fetched, and no
+  `dangerouslySetInnerHTML` of source anywhere. The rich clipboard uses `ClipboardItem` with both
+  `text/html` and `text/plain` and **degrades honestly** (plain-text copy + a plain explanation) when
+  rich writing is unsupported, denied, or needs a secure context. Slack’s paste behaviour was
+  **verified rather than assumed** — its composer doesn’t reliably convert pasted Markdown, so that
+  profile drops emphasis it can’t honour and rides compact tables inside a code block. Only the last
+  destination and the table-layout preference are persisted; the Markdown source and every output are
+  never saved.
 
 ### Intentionally deferred
 
@@ -663,6 +777,16 @@ thoroughly unit-tested in isolation from rendering.
   because an abbreviation is never a reliable zone. The comparison-zone table is intentionally capped
   (this is an instrument, not a world-clock dashboard), and there is no analog clock, globe, or
   calendar grid.
+- **Pastewright prepares content for the clipboard — you paste it yourself.** No direct posting and
+  no Gmail / Outlook / LinkedIn / Slack / Reddit / Docs integrations, no OAuth, no DOCX or PDF export,
+  no file uploads, and — emphatically — **no AI rewriting**: no summarising, tone-shifting,
+  hashtag/emoji generation, character-limit trimming, or “engagement” optimisation. It ships a
+  deliberately bounded set of five destinations rather than a plugin marketplace, and does not try to
+  infer where you’re pasting from clipboard history or browser state — you choose. Aligned-table
+  display width is a documented approximation (grapheme- and CJK-aware, but exotic emoji ZWJ sequences
+  may be a column off, so perfect terminal-cell alignment is not claimed for all Unicode); reference-style
+  link definitions are resolved but footnotes are rendered as a plain marker. One document-level table
+  strategy is offered, not per-table configuration.
 
 ---
 

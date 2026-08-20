@@ -189,6 +189,28 @@ export default function HomePage() {
           </ul>
         </Link>
 
+        <Link className={styles.card} href="/tools/pastewright">
+          <span className={styles.cardTop}>
+            <span className={styles.cardTitle}>Pastewright</span>
+            <span className={styles.cardArrow} aria-hidden="true">
+              →
+            </span>
+          </span>
+          <span className={styles.cardDesc}>
+            Markdown is great until you need to put it somewhere that isn&rsquo;t. Paste Markdown,
+            choose the destination &mdash; rich text for email and documents, LinkedIn, Slack,
+            Reddit Markdown, or plain text &mdash; and copy a version adapted for it. Tables become
+            real HTML tables, aligned columns, or record blocks as needed. It transforms
+            representation, not your words, and shows you exactly what changed.
+          </span>
+          <ul className={styles.tags}>
+            <li className={styles.tag}>markdown &rarr; anywhere</li>
+            <li className={styles.tag}>table adapter</li>
+            <li className={styles.tag}>rich clipboard</li>
+            <li className={styles.tag}>what changed</li>
+          </ul>
+        </Link>
+
         <p className={styles.note}>
           More instruments are on the bench. Each one arrives only when it&rsquo;s genuinely
           finished — not before.
