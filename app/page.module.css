@@ -47,14 +47,21 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* Two comfortable columns on desktop, one below ~950px viewports. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 440px), 1fr));
+  gap: 1rem;
+}
+
 .card {
-  display: block;
+  display: flex;
+  flex-direction: column;
   position: relative;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: clamp(1.4rem, 3vw, 2rem);
-  max-width: 640px;
   text-decoration: none;
   color: inherit;
   box-shadow: var(--shadow-sm);
@@ -96,6 +103,8 @@
 .cardDesc {
   margin: 0.6rem 0 1rem;
   color: var(--text-muted);
+  /* Push the tag row to the card's bottom edge when grid rows equalize. */
+  flex: 1;
 }
 
 .tags {

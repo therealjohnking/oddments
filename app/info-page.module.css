@@ -1,0 +1,72 @@
+/* Shared layout for the small informational pages (About, Privacy). */
+
+.page {
+  padding-block: clamp(2.5rem, 7vw, 4.5rem) clamp(2rem, 6vw, 4rem);
+  max-width: 720px;
+}
+
+.breadcrumb {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  margin: 0 0 1.25rem;
+}
+
+.breadcrumb a {
+  color: var(--text-muted);
+}
+
+.title {
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.lede {
+  margin: 1.1rem 0 0;
+  font-size: 1.075rem;
+  color: var(--text-muted);
+  max-width: 58ch;
+}
+
+.section {
+  margin-top: 2.5rem;
+}
+
+.section h2 {
+  font-size: 1.2rem;
+  margin: 0 0 0.6rem;
+}
+
+.section p {
+  margin: 0.6rem 0 0;
+  color: var(--text-muted);
+  max-width: 62ch;
+}
+
+.section ul {
+  margin: 0.75rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--text-muted);
+  display: grid;
+  gap: 0.45rem;
+  max-width: 62ch;
+}
+
+.section code {
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 0.08em 0.35em;
+  color: var(--text);
+}
+
+.fineprint {
+  margin-top: 2.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-faint);
+  font-size: 0.9rem;
+}

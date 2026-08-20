@@ -1,27 +1,30 @@
 import type { Metadata, Viewport } from 'next';
+import { Analytics } from '@/components/site/Analytics';
 import { SiteFooter } from '@/components/site/SiteFooter';
 import { SiteHeader } from '@/components/site/SiteHeader';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, siteUrl } from '@/lib/site/meta';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: {
-    default: 'Oddments — small instruments, finished properly',
-    template: '%s · Oddments',
+    default: SITE_TITLE,
+    template: `%s · ${SITE_NAME}`,
   },
-  description:
-    'A collection of small, unusually polished browser utilities. Local-first, no account, no database — everything runs in your browser.',
-  applicationName: 'Oddments',
-  authors: [{ name: 'Oddments' }],
-  icons: {
-    icon: [
-      {
-        url:
-          'data:image/svg+xml,' +
-          encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#b23c12"/><text x="16" y="23" font-family="ui-monospace,monospace" font-size="20" font-weight="700" text-anchor="middle" fill="#fff">o</text></svg>',
-          ),
-      },
-    ],
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  // Site-wide defaults; every public page also declares its own openGraph
+  // block and canonical via pageMetadata() (Next merges metadata shallowly).
+  // The og:image comes from app/opengraph-image.tsx, the icons from
+  // app/icon.tsx and app/apple-icon.tsx — all generated at build time.
+  openGraph: {
+    siteName: SITE_NAME,
+    type: 'website',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: 'summary_large_image',
   },
 };
 
@@ -57,6 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SiteHeader />
         <main id="main">{children}</main>
         <SiteFooter />
+        <Analytics />
       </body>
     </html>
   );

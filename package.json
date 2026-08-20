@@ -2,7 +2,7 @@
   "name": "oddments",
   "version": "0.1.0",
   "private": true,
-  "description": "Oddments — small, unusually polished browser utilities. Small instruments, finished properly.",
+  "description": "Oddments — small browser instruments for annoying little problems.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

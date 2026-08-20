@@ -1,0 +1,43 @@
+# Response headers for the static deployment. Cloudflare Pages (and Cloudflare
+# Workers static assets) read this file from the build output; Next copies it
+# into ./out verbatim because it lives in ./public. Other hosts ignore it
+# harmlessly — see DEPLOYMENT.md for the equivalents.
+#
+# The Content-Security-Policy is written against what Oddments actually does:
+#   script-src  'unsafe-inline' — Next.js static export bootstraps with inline
+#               scripts (and the pre-paint theme script is inline); a
+#               nonce/hash scheme isn't available without a server.
+#               static.cloudflareinsights.com is the optional Web Analytics
+#               beacon (harmless when analytics is disabled).
+#   style-src   'unsafe-inline' — React style attributes (dynamic widths,
+#               highlight offsets) require it.
+#   worker-src  blob: — Regex Workbench runs matching in a Blob-URL Web
+#               Worker; child-src is the fallback older Safari consults.
+#   connect-src cloudflareinsights.com — the beacon's reporting endpoint;
+#               'self' covers Next's own prefetches.
+#   form-action 'none' — the site has no forms that submit anywhere. (If a
+#               future tool ever adds a <form>, an unprevented implicit
+#               submit would be silently blocked — change to 'self' then.)
+#   frame-ancestors 'none' — nothing should embed these tools (clickjacking).
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'self' https://cloudflareinsights.com; worker-src blob:; child-src blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
+
+# Hashed build assets never change under the same name.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The build-time images are emitted without file extensions; declare their
+# types so scrapers and strict clients aren't handed application/octet-stream.
+/icon
+  Content-Type: image/png
+
+/apple-icon
+  Content-Type: image/png
+
+/opengraph-image
+  Content-Type: image/png

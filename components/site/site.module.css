@@ -93,6 +93,23 @@
   max-width: 60ch;
 }
 
+.footerNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+}
+
+.footerNav a {
+  color: var(--text-muted);
+  text-decoration-color: color-mix(in srgb, var(--text-muted) 35%, transparent);
+  /* Clears the 24px minimum touch-target height without visible change. */
+  padding-block: 0.25rem;
+}
+
+.footerNav a:hover {
+  color: var(--text);
+}
+
 .footerTag {
   font-family: var(--font-mono);
   font-size: 0.8rem;

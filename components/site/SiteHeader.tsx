@@ -12,9 +12,11 @@ export function SiteHeader() {
           </span>
           <span className={styles.wordmarkText}>oddments</span>
         </Link>
-        <nav className={styles.nav} aria-label="Site">
+        {/* Not a <nav>: it holds controls, not links — the site's navigation
+            landmark is the footer's. */}
+        <div className={styles.nav}>
           <ThemeToggle />
-        </nav>
+        </div>
       </div>
     </header>
   );

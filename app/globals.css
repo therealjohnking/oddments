@@ -20,7 +20,8 @@
   --surface-2: #faf9f5;
   --text: #1c1b18;
   --text-muted: #57544c;
-  --text-faint: #86837a;
+  /* 4.70:1 on --bg — faint, but still WCAG AA for normal text. */
+  --text-faint: #706d64;
   --border: #e5e1d6;
   --border-strong: #d3cebf;
 
@@ -71,7 +72,8 @@
     --surface-2: #26242a;
     --text: #f0ede6;
     --text-muted: #b1aca2;
-    --text-faint: #837e74;
+    /* 4.71:1 on --bg — faint, but still WCAG AA for normal text. */
+    --text-faint: #878278;
     --border: #322f38;
     --border-strong: #45414c;
 
@@ -113,7 +115,7 @@
   --surface-2: #26242a;
   --text: #f0ede6;
   --text-muted: #b1aca2;
-  --text-faint: #837e74;
+  --text-faint: #878278;
   --border: #322f38;
   --border-strong: #45414c;
 
@@ -155,6 +157,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Keep focused/anchored elements clear of the 60px sticky header. */
+  scroll-padding-top: 5rem;
 }
 
 body {

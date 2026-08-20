@@ -1,0 +1,53 @@
+.wrap {
+  padding-block: clamp(3rem, 8vw, 5.5rem) clamp(2rem, 6vw, 4rem);
+  max-width: 720px;
+}
+
+.code {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  margin: 0 0 1rem;
+}
+
+.title {
+  font-size: clamp(2rem, 6vw, 3rem);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.lede {
+  margin: 1.1rem 0 0;
+  color: var(--text-muted);
+  max-width: 58ch;
+}
+
+.homeLink {
+  margin: 1.4rem 0 0;
+  font-weight: 550;
+}
+
+.listHeading {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 650;
+  margin: 2.75rem 0 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.toolList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.hook {
+  color: var(--text-faint);
+}

@@ -1,14 +1,20 @@
 # Oddments
 
-**Small instruments, finished properly.**
+**Small instruments for annoying little problems.**
 
-Oddments is a collection of small, unusually polished browser utilities — tools for text,
-code, and the web's odder corners. Each one is small enough to open without a manual and
-finished enough to bookmark.
+Oddments is a collection of small browser utilities — tools for text, code, and the web's
+odder corners. Each one is small enough to open without a manual and finished enough to
+bookmark.
 
 Everything runs **locally in your browser**. There is no account, no database, no backend,
 and nothing you type is ever uploaded. The whole site builds to static files and can be
 hosted anywhere.
+
+Oddments is also a **laboratory**: each tool is built far enough — and finished well
+enough — to find out whether it deserves to become something larger. Some instruments will
+stay small forever; some will grow with real use. The public site explains itself at
+`/about`, documents its data practices at `/privacy`, and takes feedback through
+[GitHub Issues](https://github.com/blairhartman/oddments/issues).
 
 ---
 
@@ -434,6 +440,9 @@ npm run build    # production build → static export in ./out
 The build is a fully static export (`output: 'export'`), so `./out` can be served by any
 static host or opened locally.
 
+Deploying the public site (Cloudflare Pages, analytics, custom domain, and the build-time
+environment variables in `.env.example`) is documented in [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Quality gates
 
 ```bash
@@ -458,7 +467,12 @@ npm run check         # everything below, in order
 
 ```
 app/                          Next.js App Router
-  page.tsx                    landing page
+  page.tsx                    landing page (cards in newest-first manifest order)
+  about/, privacy/            the public About and Privacy pages
+  not-found.tsx               the Oddments 404 (exported as 404.html)
+  icon.tsx, apple-icon.tsx    favicon / touch icon, generated at build time
+  opengraph-image.tsx         the shared social-preview card, generated at build time
+  robots.ts, sitemap.ts       indexing metadata, resolved against NEXT_PUBLIC_SITE_URL
   tools/invisible-characters/ the inspector route
   tools/slopometer/           the slopometer route
   tools/csv-autopsy/          the CSV Autopsy route
@@ -470,7 +484,7 @@ app/                          Next.js App Router
   tools/pastewright/          the Pastewright route
   layout.tsx, globals.css     shell, design tokens, theming
 components/
-  site/                       header, footer, theme toggle
+  site/                       header, footer, theme toggle, env-gated analytics beacon
   inspector/                  inspector React UI (+ its own CSS module)
   slopometer/                 slopometer React UI (+ its own CSS module)
   csv-autopsy/                CSV Autopsy React UI (+ its own CSS module)
@@ -480,6 +494,9 @@ components/
   date-goblin/                Date Goblin React UI (+ its own CSS module)
   regex-workbench/            Regex Workbench React UI + the Blob-worker executor (+ CSS module)
   pastewright/                Pastewright React UI + rich-clipboard + RichNode preview (+ CSS module)
+lib/site/                     site-level metadata (the tested core)
+  meta.ts                     site constants, siteUrl(), the shared pageMetadata() helper
+  tools.ts                    the canonical tool manifest (slugs, names, 404 hooks)
 lib/inspector/                framework-agnostic engine (the tested core)
   categories.ts               the category taxonomy + metadata
   named-characters.ts         curated names / abbreviations / clean-targets
@@ -731,6 +748,39 @@ audit` clean). The `mdast` tree is exactly the shape the transform needs; every 
   destination and the table-layout preference are persisted; the Markdown source and every output are
   never saved.
 
+- **The public shell is deliberately thin.** The landing page, About, Privacy, and the 404 share
+  the design tokens and a small amount of CSS — there is no CMS, no component framework, and no
+  "platform". A tiny manifest (`lib/site/tools.ts`) is the one place that enumerates tool routes
+  (sitemap + 404 quick links); a test keeps the landing page's hand-written cards in the same
+  order, so the manifest can never silently drift from the page people see.
+- **Metadata is configurable, not hardcoded.** Canonical URLs, `og:url`, `robots.txt`, and
+  `sitemap.xml` resolve against `NEXT_PUBLIC_SITE_URL` at build time (localhost fallback for
+  development). The favicon, Apple touch icon, and the shared social-preview card are rendered at
+  build time from code (`ImageResponse`) — no binary assets in the repository, and shared links
+  show a real card everywhere. One generic card serves all routes; per-tool imagery is a
+  deliberate non-goal for now.
+- **Security headers ship with the site.** `public/_headers` (the Cloudflare Pages convention)
+  carries a Content-Security-Policy written against what the tools actually do — including
+  `worker-src blob:` for Regex Workbench's worker and an allowance for the optional analytics
+  beacon — plus `nosniff`, `frame-ancestors 'none'`, a strict referrer policy, a minimal
+  Permissions-Policy, and immutable caching for hashed assets. `script-src` keeps
+  `'unsafe-inline'` because a static export has no nonce infrastructure; that trade-off is
+  documented in the file itself.
+- **Analytics is route-level, optional, and content-blind — an architectural invariant.** When
+  (and only when) `NEXT_PUBLIC_CF_BEACON_TOKEN` is set at build time, the site includes
+  Cloudflare Web Analytics: a cookieless beacon that counts page views per path (which is per
+  tool), referrers, countries, and broad browser/device class. **No analytics event may ever
+  contain tool input or output** — no pasted text, patterns, timestamps, CSV/JSON content, or
+  Markdown. Nothing in the codebase sends such data anywhere, and product-level events (e.g.
+  "copy clicked") are deferred until route-level data proves insufficient.
+- **Browser support is evergreen, with honest degradation.** The tools target current
+  Chrome/Edge, Firefox, Safari, and their mobile versions (roughly 2024-onward releases; the
+  newest hard dependencies are `Intl.Segmenter` — Safari 16.4+/Firefox 125+ — and
+  `color-mix()` in CSS). Where support genuinely varies, the tools feature-detect and degrade
+  honestly: rich clipboard copy falls back to plain text with an explanation, Temporal uses a
+  polyfill when the host lacks it, grapheme segmentation falls back to code points, and a
+  blocked worker degrades to synchronous matching. No polyfill infrastructure beyond that.
+
 ### Intentionally deferred
 
 - **Confusables are a curated subset,** not the full Unicode UTS #39 database (which is
@@ -777,6 +827,14 @@ audit` clean). The `mdast` tree is exactly the shape the transform needs; every 
   because an abbreviation is never a reliable zone. The comparison-zone table is intentionally capped
   (this is an instrument, not a world-clock dashboard), and there is no analog clock, globe, or
   calendar grid.
+- **Product-event analytics** (`tool_used`, `copy_completed`, …) is deferred until route-level
+  page views prove insufficient to answer a real question. If it ever lands, events carry only
+  tightly bounded enum-like properties (tool, action, destination-style choices) and never
+  content; the invariant above is the constraint, and this README documents the exact schema
+  first.
+- **Per-tool social-preview images** are a polish item, not a launch requirement — the shared
+  Oddments card is accurate and legible. Revisit if link-sharing becomes a real acquisition
+  channel.
 - **Pastewright prepares content for the clipboard — you paste it yourself.** No direct posting and
   no Gmail / Outlook / LinkedIn / Slack / Reddit / Docs integrations, no OAuth, no DOCX or PDF export,
   no file uploads, and — emphatically — **no AI rewriting**: no summarising, tone-shifting,
@@ -786,7 +844,10 @@ audit` clean). The `mdast` tree is exactly the shape the transform needs; every 
   display width is a documented approximation (grapheme- and CJK-aware, but exotic emoji ZWJ sequences
   may be a column off, so perfect terminal-cell alignment is not claimed for all Unicode); reference-style
   link definitions are resolved but footnotes are rendered as a plain marker. One document-level table
-  strategy is offered, not per-table configuration.
+  strategy is offered, not per-table configuration. The rich-text output is one general-purpose
+  HTML payload; per-application tuning (Gmail and Google Docs render pasted HTML with their own
+  quirks and could each earn a dedicated profile) is a known future refinement, driven by real
+  usage reports rather than built speculatively.
 
 ---
 
