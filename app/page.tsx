@@ -167,6 +167,28 @@ export default function HomePage() {
           </ul>
         </Link>
 
+        <Link className={styles.card} href="/tools/regex-workbench">
+          <span className={styles.cardTop}>
+            <span className={styles.cardTitle}>Regex Workbench</span>
+            <span className={styles.cardArrow} aria-hidden="true">
+              →
+            </span>
+          </span>
+          <span className={styles.cardDesc}>
+            A local-first instrument for JavaScript regular expressions. Enter a pattern and see
+            exactly what it does &mdash; matches highlighted in place, every capture group, exact
+            positions, zero-width behaviour made visible, a deterministic explanation built from the
+            parse tree, and a replacement preview. Matching runs off the main thread with a safety
+            timeout. It exposes the engine rather than hiding it.
+          </span>
+          <ul className={styles.tags}>
+            <li className={styles.tag}>capture groups</li>
+            <li className={styles.tag}>zero-width</li>
+            <li className={styles.tag}>explain &amp; replace</li>
+            <li className={styles.tag}>ECMAScript</li>
+          </ul>
+        </Link>
+
         <p className={styles.note}>
           More instruments are on the bench. Each one arrives only when it&rsquo;s genuinely
           finished — not before.

@@ -290,6 +290,68 @@ premise is deliberate:
 
 ---
 
+### Regex Workbench — `/tools/regex-workbench`
+
+A local-first instrument for understanding, testing, and refining **JavaScript / ECMAScript**
+regular expressions — and only that engine. Enter a pattern and it answers the three questions a
+plain highlighter can’t: **what matched, why it matched, and what the engine actually interpreted.**
+Its premise is deliberate:
+
+> **Expose the engine, don’t hide it — when `RegExp` does something surprising, show the surprise.**
+
+- **JavaScript regex only, and it says so.** No PCRE/Python/.NET/Java flavor switching, no pretence
+  that JS syntax is universal. The engine is labelled everywhere, because regex semantics vary by
+  engine and that difference matters.
+- **Matching runs off the main thread.** User-supplied regex over user-supplied text is genuinely
+  dangerous — catastrophic backtracking is synchronous and uninterruptible on the main thread — so
+  matching runs in a **Web Worker with a time budget**. If a run exceeds it, the worker is
+  terminated and recreated and the tool reports _“matching took too long and was stopped”_ (never
+  _“this regex is vulnerable”_ — that is not something structure can prove). The worker is built
+  from a **Blob URL** with the executor embedded verbatim, so the static export stays portable and
+  there is exactly one, unit-tested match implementation. Results are bounded (first 1,000 matches),
+  and stale worker replies can never overwrite newer input.
+- **Capture groups, done properly.** Every match shows group 0, each numbered group, and each named
+  group with its value and exact range — and it distinguishes an **unmatched group** (`null`, did
+  not participate) from a group that **captured the empty string** (`""`). Repeated captures show
+  the last participating iteration, exactly as JavaScript keeps them. Positions come from the
+  engine’s own match indices (the `d` flag, used internally).
+- **Zero-width matches made visible.** Anchors, word boundaries, lookarounds and empty-capable
+  patterns produce matches _between_ characters; the workbench renders them as carets rather than
+  faking a one-character highlight, and its iteration advances one **code point** past each empty
+  match under `u`/`v` (never splitting an astral pair) so `/^/gm` or `//g` terminate instead of
+  looping forever.
+- **A deterministic, structural explanation.** The flagship. The pattern is parsed with a mature
+  ECMAScript AST parser (`@eslint-community/regexpp`) and rendered as a nesting-preserving tree —
+  quantifiers, groups, named groups, alternation, character classes, ranges, shorthand and
+  `\p{…}` property escapes, assertions, lookaround, backreferences, and `v`-mode set operations.
+  **No LLM, no regex-about-regex guessing.** Flag-sensitive meanings are annotated honestly (`.`
+  notes whether `s` lets it cross newlines; `^`/`$` note whether `m` makes them per-line). When the
+  parser meets syntax it can’t yet handle, the explanation degrades to “unavailable” rather than
+  inventing structure.
+- **Honest positions.** Match and group offsets are **UTF-16 code units** — the only kind `RegExp`
+  produces — and are labelled as such; line/column are derived separately in 1-based lines and
+  **code-point** columns and never conflated with the raw offset.
+- **Replacement with real semantics.** A replacement preview built on `String.prototype.replace`,
+  so `$&`, `$1`, `$<name>`, `` $` ``, `$'` and `$$` behave exactly as JavaScript defines them —
+  including that flags decide scope (without `g`, only the first match is replaced). A compact token
+  explainer marks an out-of-range `$7` or unknown `$<name>` as inert, exactly where JS leaves it
+  literal.
+- **Restrained diagnostics.** It flags genuinely surprising shapes — a pattern that can match empty
+  text, a global pattern that will emit zero-width matches, and the classic **nested-quantifier**
+  backtracking shape (`(a+)+`, `(.*)*`, `(?:a?)*`) — each backed by a clear structural rule, and
+  never claims a proof it doesn’t have. An ordinary `.*` or an unanchored pattern is never flagged.
+- **A bounded test-case bench.** Add short “should this match?” rows and see pass/fail against the
+  current pattern as you edit — a lightweight way to pin down intent. No suites, no persistence, no
+  ceremony.
+- **Copy & export.** A safe `/pattern/flags` literal (with `/` correctly escaped and empty rendered
+  as `(?:)`), a `new RegExp("…", "…")` constructor form, the pattern body, selected-match details,
+  and a plain-text diagnostic summary.
+- **Local, and forgetful by design.** Only your **selected flags** are remembered; the pattern, the
+  test text, and the replacement string are **never saved** — any of them may be proprietary.
+  Nothing is uploaded, and there is no telemetry, analytics, or external regex API.
+
+---
+
 ## Running it
 
 Requires a recent Node.js (18.18+; developed on Node 22+).
@@ -335,6 +397,7 @@ app/                          Next.js App Router
   tools/json-crime-scene/     the JSON Crime Scene route
   tools/corporate-bingo/      the Corporate Phrase Bingo route
   tools/date-goblin/          the Date Goblin route
+  tools/regex-workbench/      the Regex Workbench route
   layout.tsx, globals.css     shell, design tokens, theming
 components/
   site/                       header, footer, theme toggle
@@ -345,6 +408,7 @@ components/
   json-crime-scene/           JSON Crime Scene React UI (+ its own CSS module)
   corporate-bingo/            Corporate Phrase Bingo React UI (+ its own CSS module)
   date-goblin/                Date Goblin React UI (+ its own CSS module)
+  regex-workbench/            Regex Workbench React UI + the Blob-worker executor (+ CSS module)
 lib/inspector/                framework-agnostic engine (the tested core)
   categories.ts               the category taxonomy + metadata
   named-characters.ts         curated names / abbreviations / clean-targets
@@ -425,6 +489,25 @@ lib/date-goblin/              framework-agnostic engine (the tested core)
   persistence.ts              defensive settings save/load (never the entered value)
   examples.ts                 the built-in demonstration set
   index.ts                    public API: interpret() + re-exports
+  *.test.ts                   unit tests
+lib/regex-workbench/          framework-agnostic engine (the tested core)
+  types.ts                    plain domain types (compile / match / explain / replace)
+  flags.ts                    flag metadata + runtime feature-detection + canonicalization
+  ast.ts                      the sole seam onto @eslint-community/regexpp (+ nullability)
+  compile.ts                  RegExp validation, group metadata, execFlags, literal import
+  execute.ts                  the self-contained match iterator (embedded in the worker)
+  matches.ts                  raw matches → positions / groups / zero-width enrichment
+  positions.ts                UTF-16 offset → 1-based line / code-point column
+  explain.ts                  AST → deterministic, nesting-preserving explanation tree
+  diagnostics.ts              restrained, structural hazard findings (no fake ReDoS prover)
+  replace.ts                  JS-exact replacement preview + token explainer
+  export.ts                   safe /pattern/flags literal + constructor forms
+  testcases.ts                the bounded "should this match?" bench
+  examples.ts                 the built-in demonstration set
+  report.ts                   copyable diagnostic summary
+  limits.ts                   match cap, worker timeout, render caps
+  persistence.ts              defensive settings save/load (flags only, never content)
+  index.ts                    public API: compile/execute/enrich/explain/diagnose/replace
   *.test.ts                   unit tests
 ```
 
@@ -511,6 +594,28 @@ thoroughly unit-tested in isolation from rendering.
   `useSyncExternalStore` snapshot and an adjust-state-during-render initialization keep the first
   render identical on server and client, and relative time is driven by a shared minute-granularity
   clock store rather than a per-component timer.
+- **Regex Workbench’s one dependency is a real ECMAScript AST parser, and its one novel piece of
+  infrastructure is a Web Worker — both earned.** The structural explanation and the AST-based
+  diagnostics must reflect what JavaScript’s `RegExp` _actually_ parses, so they sit on
+  [`@eslint-community/regexpp`](https://github.com/eslint-community/regexpp) (MIT, **zero
+  transitive dependencies**, the parser behind ESLint’s regexp rules — already present transitively,
+  now a direct dependency), targeting the latest ECMAScript grammar it knows. It is wrapped in one
+  module (`ast.ts`); regexpp AST nodes never reach React, and when it can’t parse syntax the native
+  engine still accepts, the explanation degrades rather than guessing. The worker is the first in
+  Oddments and, unlike the deferred cases below, is _load-bearing_: running a user regex over user
+  text can backtrack catastrophically, and that is synchronous and uninterruptible on the main
+  thread. So matching runs in a **Blob-URL Web Worker with a hard time budget** — the same
+  self-contained `executeRegex` that unit tests exercise on the main thread is embedded verbatim via
+  `toString()`, so the static export needs no bundler worker-emission and there is one implementation,
+  not two. The manager rejects stale replies by request id, terminates and recreates the worker on
+  timeout (recovering cleanly for the next run), and keeps only the latest queued request. `regexpp`
+  itself is a _linear_ parser, so it stays on the main thread safely; only execution is offloaded.
+- **Regex Workbench refuses to over-claim.** It is JavaScript-only and says so everywhere; it never
+  labels a pattern “vulnerable” (backtracking cost is input-dependent and not decidable from
+  structure — the timeout is the real safety net); it never mislabels a UTF-16 offset as a
+  “character position”; and it distinguishes an unmatched capture from an empty one. Only the flags
+  are persisted — the pattern, test text, and replacement are treated as potentially sensitive and
+  never saved.
 
 ### Intentionally deferred
 
